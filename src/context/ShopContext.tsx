@@ -23,6 +23,7 @@ import {
 import { CATEGORY_FALLBACK_IMAGES, DEFAULT_LUXURY_IMAGE } from '../data/fallbackImages';
 import { INITIAL_VENDORS } from '../data/mockVendors';
 import { OrderValidatorService } from '../services/orderValidator';
+import { HostingerApiService } from '../services/hostingerApi';
 
 export type AppView =
   | 'home'
@@ -219,6 +220,21 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('zaly_products_v1', JSON.stringify(products));
   }, [products]);
+
+  // Synchronisation en direct avec la Base de Données Hostinger MySQL
+  useEffect(() => {
+    HostingerApiService.getProducts().then((remoteProds) => {
+      if (remoteProds && remoteProds.length > 0) {
+        setProducts(remoteProds);
+      }
+    });
+
+    HostingerApiService.getVendors().then((remoteVendors) => {
+      if (remoteVendors && remoteVendors.length > 0) {
+        setVendors(remoteVendors);
+      }
+    });
+  }, []);
 
   // 3. Persistent Cart State
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -548,6 +564,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setVendors((prev) => [newVendor, ...prev]);
     setCurrentVendorSession(newVendor);
+    HostingerApiService.addVendor(newVendor);
     showToast(`🎉 Félicitations ! Votre boutique « ${newVendor.storeName} » est créée avec 2 mois d'essai offerts !`);
     return newVendor;
   };
@@ -630,6 +647,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return v;
       })
     );
+    HostingerApiService.paySubscription(vendorId, paymentMethod, paymentRef);
     showToast(`✓ Abonnement annuel validé (300 000 GNF). Votre boutique est active pour 1 an !`);
   };
 
@@ -791,6 +809,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id
     };
     setProducts((prev) => [newProduct, ...prev]);
+    HostingerApiService.addProduct(newProduct);
     showToast(`Produit « ${newProduct.name} » ajouté au catalogue !`);
     return newProduct;
   };
@@ -802,6 +821,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    HostingerApiService.deleteProduct(id);
     showToast('Produit supprimé du catalogue.');
   };
 

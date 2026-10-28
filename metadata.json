@@ -1,0 +1,6 @@
+{
+  "name": "ZALY FASHION — Boutique Mode de Luxe Guinée",
+  "description": "Boutique en ligne haut de gamme en Guinée : vêtements, chaussures et accessoires pour homme et femme. Prix en GNF, livraison express à Conakry et régions, commande WhatsApp et paiement Orange Money / Cash.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

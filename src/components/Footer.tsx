@@ -292,28 +292,15 @@ export const Footer: React.FC = () => {
       {/* 3. Bottom Row: Payments & Copyright */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-stone-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-stone-500">
         <div className="flex items-center gap-3">
-          <p>
-            © 2026 <strong>ZALY FASHION</strong>. Tous droits réservés. République de Guinée.
-          </p>
-          <button
-            onClick={() => {
+          <p
+            onDoubleClick={() => {
               setCurrentView('admin');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="text-stone-700 hover:text-stone-500 text-[11px] transition"
-            title="Espace réservé à la direction ZALY FASHION"
+            className="cursor-default select-none"
           >
-            Administration
-          </button>
-          <span className="text-stone-800">•</span>
-          <a
-            href="/zaly_fashion_hostinger.zip"
-            download="zaly_fashion_hostinger.zip"
-            className="text-amber-600 hover:text-amber-400 text-[11px] font-medium transition flex items-center gap-1"
-            title="Télécharger l'archive ZIP mise à jour pour Hostinger"
-          >
-            <span>📦 Télécharger Archive Hostinger (.ZIP)</span>
-          </a>
+            © 2026 <strong>ZALY FASHION</strong>. Tous droits réservés. République de Guinée.
+          </p>
         </div>
 
         {/* Payment badges */}

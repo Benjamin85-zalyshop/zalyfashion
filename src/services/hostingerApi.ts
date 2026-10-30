@@ -211,15 +211,18 @@ export const HostingerApiService = {
     });
 
     if (data && data._isRawPhp) {
-      // Mode Aperçu AI Studio : vérifier si admin local ou PIN par défaut
+      // Mode Aperçu AI Studio : vérifier si l'email et le mot de passe correspondent EXACTEMENT à l'admin créé
       const savedAdmin = localStorage.getItem('zaly_admin_user_v1');
       if (savedAdmin) {
         try {
           const parsed = JSON.parse(savedAdmin);
-          if (
-            (parsed.email.toLowerCase() === identifier.toLowerCase() || parsed.phone === identifier) &&
-            (password === parsed._tempPass || password === '1234' || password === 'admin')
-          ) {
+          const emailMatch = parsed.email && parsed.email.toLowerCase() === identifier.toLowerCase();
+          const cleanInputPhone = identifier.replace(/[^0-9]/g, '');
+          const cleanSavedPhone = (parsed.phone || '').replace(/[^0-9]/g, '');
+          const phoneMatch = cleanInputPhone.length >= 6 && cleanSavedPhone.includes(cleanInputPhone);
+          const passMatch = password === parsed._tempPass;
+
+          if ((emailMatch || phoneMatch) && passMatch) {
             return {
               success: true,
               message: `Bienvenue ${parsed.name} !`,
@@ -231,33 +234,10 @@ export const HostingerApiService = {
         }
       }
 
-      if (
-        (identifier.toLowerCase() === 'admin' ||
-          identifier.toLowerCase() === 'admin@zalyfashion.com' ||
-          identifier.toLowerCase() === 'benjamintolno7@gmail.com') &&
-        (password === '1234' || password === 'admin')
-      ) {
-        const adminUser: UserProfile = {
-          id: 'admin-root',
-          name: 'Benjamin Tolno (Admin)',
-          email: 'benjamintolno7@gmail.com',
-          phone: '+224 628 37 65 66',
-          role: 'admin',
-          city: 'Conakry',
-          district: 'Kaloum',
-          address: 'Siège ZALY FASHION',
-          savedOrders: []
-        };
-        return {
-          success: true,
-          message: 'Connexion administrateur réussie.',
-          user: adminUser
-        };
-      }
-
+      // Si l'identifiant ou le mot de passe est incorrect, l'accès est strictement refusé
       return {
         success: false,
-        message: 'Identifiant ou mot de passe incorrect. Vous pouvez utiliser le PIN 1234 pour déverrouiller.'
+        message: 'Accès refusé : Identifiant ou mot de passe incorrect.'
       };
     }
 

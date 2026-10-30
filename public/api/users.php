@@ -83,37 +83,17 @@ switch ($method) {
             $user = $stmt->fetch();
 
             if (!$user) {
-                // Code de secours Admin initial (code PIN par défaut 1234 si aucun compte admin n'a encore été créé)
-                if (($identifier === 'admin' || $identifier === 'admin@zalyfashion.gn') && ($password === '1234' || $password === 'admin')) {
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Connexion administrateur réussie.',
-                        'user' => [
-                            'id' => 'admin-root',
-                            'name' => 'Direction ZALY FASHION',
-                            'email' => 'admin@zalyfashion.gn',
-                            'phone' => '+224 625 66 75 22',
-                            'role' => 'admin',
-                            'city' => 'Conakry',
-                            'district' => 'Kaloum',
-                            'address' => 'Boulevard du Commerce, Almamya',
-                            'savedOrders' => []
-                        ]
-                    ]);
-                    exit();
-                }
-
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Identifiant ou mot de passe incorrect.']);
+                echo json_encode(['success' => false, 'message' => 'Accès refusé : Identifiant ou mot de passe incorrect.']);
                 exit();
             }
 
-            // Vérification du mot de passe haché (ou mot de passe brut de secours)
-            $isPasswordValid = password_verify($password, $user['passwordHash']) || ($password === $user['passwordHash']);
+            // Vérification stricte du mot de passe avec password_verify
+            $isPasswordValid = password_verify($password, $user['passwordHash']);
 
             if (!$isPasswordValid) {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Mot de passe incorrect.']);
+                echo json_encode(['success' => false, 'message' => 'Accès refusé : Identifiant ou mot de passe incorrect.']);
                 exit();
             }
 

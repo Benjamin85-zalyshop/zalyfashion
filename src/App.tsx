@@ -16,7 +16,20 @@ import { InfoPages } from './pages/InfoPages';
 import { MessageCircle, Check, ArrowUp } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
-  const { currentView, toastMessage, storeSettings } = useShop();
+  const { currentView, setCurrentView, toastMessage, storeSettings } = useShop();
+
+  // Permet à l'administrateur d'accéder discrètement via l'URL https://zalyfashion.com/#admin
+  React.useEffect(() => {
+    const checkHash = () => {
+      if (window.location.hash === '#admin') {
+        setCurrentView('admin');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    checkHash();
+    window.addEventListener('hashchange', checkHash);
+    return () => window.removeEventListener('hashchange', checkHash);
+  }, [setCurrentView]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });

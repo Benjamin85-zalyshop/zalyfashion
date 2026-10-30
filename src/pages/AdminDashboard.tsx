@@ -53,17 +53,16 @@ export const AdminDashboard: React.FC = () => {
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => currentUser?.role === 'admin');
-  const [loginMethod, setLoginMethod] = useState<'pin' | 'credentials' | 'setup'>('pin');
-  const [pinCode, setPinCode] = useState('');
+  const [loginMethod, setLoginMethod] = useState<'credentials' | 'setup'>('credentials');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
   // Admin Account Setup state in Settings tab
-  const [adminSetupName, setAdminSetupName] = useState(currentUser?.role === 'admin' ? currentUser.name : 'Administrateur ZALY');
-  const [adminSetupEmail, setAdminSetupEmail] = useState(currentUser?.role === 'admin' ? currentUser.email : 'admin@zalyfashion.com');
-  const [adminSetupPhone, setAdminSetupPhone] = useState(currentUser?.role === 'admin' ? currentUser.phone : '+224 625 66 75 22');
+  const [adminSetupName, setAdminSetupName] = useState(currentUser?.role === 'admin' ? currentUser.name : 'Benjamin Tolno');
+  const [adminSetupEmail, setAdminSetupEmail] = useState(currentUser?.role === 'admin' ? currentUser.email : 'benjamintolno7@gmail.com');
+  const [adminSetupPhone, setAdminSetupPhone] = useState(currentUser?.role === 'admin' ? currentUser.phone : '+224 628 37 65 66');
   const [adminSetupPassword, setAdminSetupPassword] = useState('');
   const [adminSetupSuccess, setAdminSetupSuccess] = useState('');
   const [adminSetupError, setAdminSetupError] = useState('');
@@ -106,33 +105,23 @@ export const AdminDashboard: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setAuthLoading(true);
 
-    if (loginMethod === 'pin') {
-      // PIN access
-      if (pinCode === '1234' || pinCode.toLowerCase() === 'admin' || pinCode === '2026') {
-        setIsAuthenticated(true);
-      } else {
-        setAuthError('Code PIN incorrect. Utilisez 1234 ou vos identifiants personnalisés.');
-      }
-    } else {
-      // Credentials login
-      setAuthLoading(true);
-      try {
-        const res = await loginUser(adminEmail.trim(), adminPassword);
-        if (res.success && res.user) {
-          if (res.user.role === 'admin') {
-            setIsAuthenticated(true);
-          } else {
-            setAuthError('Ce compte est un compte client. Seuls les comptes administrateurs ont accès à cet espace.');
-          }
+    try {
+      const res = await loginUser(adminEmail.trim(), adminPassword);
+      if (res.success && res.user) {
+        if (res.user.role === 'admin') {
+          setIsAuthenticated(true);
         } else {
-          setAuthError(res.message || 'Identifiant ou mot de passe incorrect.');
+          setAuthError('Accès refusé : Ce compte ne dispose pas des droits administrateur.');
         }
-      } catch {
-        setAuthError('Erreur de connexion au serveur.');
-      } finally {
-        setAuthLoading(false);
+      } else {
+        setAuthError('Accès refusé : Identifiant ou mot de passe incorrect.');
       }
+    } catch {
+      setAuthError('Accès refusé : Erreur de communication avec le serveur.');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -348,29 +337,15 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Toggle login method : 3 tabs */}
-          <div className="grid grid-cols-3 p-1 bg-stone-100 rounded-xl text-[11px] font-bold uppercase tracking-wider gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMethod('pin');
-                setAuthError('');
-              }}
-              className={`py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
-                loginMethod === 'pin'
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-stone-500 hover:text-neutral-900'
-              }`}
-            >
-              PIN Rapide
-            </button>
+          {/* Toggle login method : 2 tabs */}
+          <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-xl text-xs font-bold uppercase tracking-wider gap-1">
             <button
               type="button"
               onClick={() => {
                 setLoginMethod('credentials');
                 setAuthError('');
               }}
-              className={`py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
+              className={`py-2.5 px-3 rounded-lg transition text-center ${
                 loginMethod === 'credentials'
                   ? 'bg-white text-neutral-900 shadow-sm'
                   : 'text-stone-500 hover:text-neutral-900'
@@ -384,7 +359,7 @@ export const AdminDashboard: React.FC = () => {
                 setLoginMethod('setup');
                 setAuthError('');
               }}
-              className={`py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
+              className={`py-2.5 px-3 rounded-lg transition text-center ${
                 loginMethod === 'setup'
                   ? 'bg-amber-800 text-white shadow-sm'
                   : 'text-amber-800 hover:text-amber-900 font-extrabold'
@@ -394,56 +369,7 @@ export const AdminDashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* 1. CODE PIN RAPIDE */}
-          {loginMethod === 'pin' && (
-            <form onSubmit={handleLogin} className="space-y-4 text-left">
-              <div>
-                <label className="text-xs font-bold text-stone-700 block mb-1">
-                  Code PIN d'accès immédiat :
-                </label>
-                <input
-                  type="password"
-                  placeholder="Code PIN (ex: 1234)"
-                  value={pinCode}
-                  onChange={(e) => setPinCode(e.target.value)}
-                  autoFocus
-                  className="w-full text-center tracking-widest text-lg font-mono px-4 py-3 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-800"
-                />
-              </div>
-
-              {authError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs text-center font-medium">
-                  {authError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
-              >
-                {authLoading ? 'Vérification...' : "Déverrouiller avec le Code PIN"}
-              </button>
-
-              <div className="pt-2 text-center space-y-2">
-                <p className="text-[11px] text-stone-500">
-                  💡 Le code d'usine est <strong>1234</strong>.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginMethod('setup');
-                    setAuthError('');
-                  }}
-                  className="w-full py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-xl border border-amber-300 transition"
-                >
-                  👉 Vous voulez créer votre propre compte Admin ? Cliquez ici
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* 2. CONNEXION PAR EMAIL & MOT DE PASSE */}
+          {/* 1. CONNEXION PAR EMAIL & MOT DE PASSE (STRICTE) */}
           {loginMethod === 'credentials' && (
             <form onSubmit={handleLogin} className="space-y-4 text-left">
               <div className="space-y-3">
@@ -454,7 +380,7 @@ export const AdminDashboard: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="ex: admin@zalyfashion.com"
+                    placeholder="ex: benjamintolno7@gmail.com ou admin@zalyfashion.com"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
@@ -486,7 +412,7 @@ export const AdminDashboard: React.FC = () => {
                 disabled={authLoading}
                 className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
               >
-                {authLoading ? 'Connexion en cours...' : "Se Connecter à l'Administration"}
+                {authLoading ? 'Vérification des accès...' : "Se Connecter à l'Administration"}
               </button>
 
               <div className="pt-2 text-center">
@@ -498,7 +424,7 @@ export const AdminDashboard: React.FC = () => {
                   }}
                   className="text-xs text-amber-800 font-bold hover:underline"
                 >
-                  Pas encore de compte configuré ? Créez-le ici
+                  Première connexion ? Créez ou mettez à jour votre compte ici
                 </button>
               </div>
             </form>

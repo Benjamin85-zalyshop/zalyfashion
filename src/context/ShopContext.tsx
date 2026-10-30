@@ -763,24 +763,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast(`Bienvenue ${res.user.name} !`);
       return res;
     }
-    // Fallback default admin PIN
-    if ((identifier.toLowerCase() === 'admin' || identifier.toLowerCase() === 'admin@zalyfashion.gn') && (pass === '1234' || pass === 'admin')) {
-      const adminUser: UserProfile = {
-        id: 'admin-root',
-        name: 'Direction ZALY FASHION',
-        email: 'admin@zalyfashion.gn',
-        phone: '+224 625 66 75 22',
-        role: 'admin',
-        city: 'Conakry',
-        district: 'Kaloum',
-        address: 'Boulevard du Commerce, Almamya',
-        savedOrders: []
-      };
-      setCurrentUser(adminUser);
-      showToast('Connecté en tant qu’administrateur ZALY FASHION.');
-      return { success: true, message: 'Connexion réussie', user: adminUser };
-    }
-    showToast(res.message || 'Identifiant ou mot de passe incorrect.');
+    showToast(res.message || 'Accès refusé : Identifiant ou mot de passe incorrect.');
     return res;
   };
 

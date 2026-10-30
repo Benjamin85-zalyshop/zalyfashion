@@ -76,3 +76,16 @@ CREATE TABLE IF NOT EXISTS `orders` (
     `status` ENUM('en_attente', 'confirmee', 'en_livraison', 'livree', 'annulee') DEFAULT 'en_attente',
     `isPaid` TINYINT(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `users` (
+    `id` VARCHAR(100) PRIMARY KEY,
+    `fullName` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) NOT NULL,
+    `phone` VARCHAR(100) NOT NULL,
+    `passwordHash` VARCHAR(255) NOT NULL,
+    `role` ENUM('client', 'admin') DEFAULT 'client',
+    `city` VARCHAR(255) DEFAULT 'Conakry',
+    `district` VARCHAR(255) DEFAULT '',
+    `address` TEXT,
+    `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

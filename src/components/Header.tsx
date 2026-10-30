@@ -28,7 +28,8 @@ export const Header: React.FC = () => {
     storeSettings,
     formatGNF,
     products,
-    openProductDetail
+    openProductDetail,
+    currentUser
   } = useShop();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -226,10 +227,21 @@ export const Header: React.FC = () => {
                 setCurrentView('account');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="p-2 text-stone-700 hover:text-amber-800 transition"
-              title="Mon Compte / Suivi"
+              className="p-1 sm:px-2.5 sm:py-1 text-stone-700 hover:text-amber-800 transition flex items-center gap-1.5 rounded-full hover:bg-stone-100"
+              title={currentUser ? `Mon Compte (${currentUser.name})` : "Mon Compte / Connexion"}
             >
-              <User className="w-5 h-5" />
+              {currentUser ? (
+                <div className="w-7 h-7 rounded-full bg-neutral-900 text-amber-400 text-xs font-bold flex items-center justify-center border border-amber-600/30">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+              ) : (
+                <User className="w-5 h-5" />
+              )}
+              {currentUser && (
+                <span className="hidden md:inline text-xs font-semibold text-neutral-800">
+                  {currentUser.name.split(' ')[0]}
+                </span>
+              )}
             </button>
 
             {/* Espace Vendeurs & Créer sa boutique */}

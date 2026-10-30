@@ -295,7 +295,6 @@ export const Footer: React.FC = () => {
           <p>
             © 2026 <strong>ZALY FASHION</strong>. Tous droits réservés. République de Guinée.
           </p>
-          <span className="text-stone-800">•</span>
           <button
             onClick={() => {
               setCurrentView('admin');
@@ -306,6 +305,15 @@ export const Footer: React.FC = () => {
           >
             Administration
           </button>
+          <span className="text-stone-800">•</span>
+          <a
+            href="/zaly_fashion_hostinger.zip"
+            download="zaly_fashion_hostinger.zip"
+            className="text-amber-600 hover:text-amber-400 text-[11px] font-medium transition flex items-center gap-1"
+            title="Télécharger l'archive ZIP mise à jour pour Hostinger"
+          >
+            <span>📦 Télécharger Archive Hostinger (.ZIP)</span>
+          </a>
         </div>
 
         {/* Payment badges */}

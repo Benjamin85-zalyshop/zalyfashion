@@ -88,6 +88,29 @@ try {
         `isPaid` TINYINT(1) DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
+    // 4. Table des Utilisateurs (Clients & Administrateurs)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `users` (
+        `id` VARCHAR(100) PRIMARY KEY,
+        `fullName` VARCHAR(255) NOT NULL,
+        `email` VARCHAR(255) NOT NULL,
+        `phone` VARCHAR(100) NOT NULL,
+        `passwordHash` VARCHAR(255) NOT NULL,
+        `role` ENUM('client', 'admin') DEFAULT 'client',
+        `city` VARCHAR(255) DEFAULT 'Conakry',
+        `district` VARCHAR(255) DEFAULT '',
+        `address` TEXT,
+        `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    // Créer le compte admin par défaut si aucun n'existe
+    $checkAdmin = $pdo->query("SELECT COUNT(*) FROM `users` WHERE `role` = 'admin'")->fetchColumn();
+    if ($checkAdmin == 0) {
+        $defaultHash = password_hash('1234', PASSWORD_DEFAULT);
+        $stmtAdmin = $pdo->prepare("INSERT INTO `users` (`id`, `fullName`, `email`, `phone`, `passwordHash`, `role`, `city`, `district`, `address`)
+            VALUES (?, ?, ?, ?, ?, 'admin', 'Conakry', 'Kaloum', 'Siège ZALY FASHION')");
+        $stmtAdmin->execute(['admin-root', 'Direction ZALY FASHION', 'admin@zalyfashion.gn', '+224 625 66 75 22', $defaultHash]);
+    }
+
     // Vérifier si la boutique principale existe, sinon l'insérer
     $checkVendor = $pdo->query("SELECT COUNT(*) FROM `vendors` WHERE `id` = 'vendor-zaly'")->fetchColumn();
     if ($checkVendor == 0) {

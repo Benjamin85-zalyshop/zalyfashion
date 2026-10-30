@@ -144,6 +144,7 @@ export type PaymentMethod =
 
 export interface CustomerDeliveryInfo {
   fullName: string;
+  email?: string;
   phone: string;
   whatsapp: string;
   city: string;

@@ -1,4 +1,4 @@
-import { Product, Vendor } from '../types/ecommerce';
+import { Product, Vendor, UserProfile } from '../types/ecommerce';
 
 /**
  * Service API Hostinger MySQL pour ZALY FASHION
@@ -63,6 +63,52 @@ export const HostingerApiService = {
   },
 
   /**
+   * Récupère les commandes depuis Hostinger MySQL
+   */
+  async getOrders(): Promise<any[] | null> {
+    try {
+      const res = await fetch('/api/orders.php');
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.success && Array.isArray(data.orders) ? data.orders : null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Enregistre une commande dans Hostinger MySQL
+   */
+  async addOrder(order: any): Promise<boolean> {
+    try {
+      const res = await fetch('/api/orders.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Met à jour le statut d'une commande dans Hostinger MySQL
+   */
+  async updateOrderStatus(orderId: string, status: string, isPaid?: boolean): Promise<boolean> {
+    try {
+      const res = await fetch('/api/orders.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_status', orderId, status, isPaid })
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
    * Récupère les boutiques partenaires depuis Hostinger MySQL
    */
   async getVendors(): Promise<Vendor[] | null> {
@@ -110,6 +156,95 @@ export const HostingerApiService = {
       return res.ok;
     } catch {
       return false;
+    }
+  },
+
+  /**
+   * Inscription d'un client dans Hostinger MySQL
+   */
+  async registerUser(payload: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+    city?: string;
+    district?: string;
+    address?: string;
+  }): Promise<{ success: boolean; message: string; user?: UserProfile }> {
+    try {
+      const res = await fetch('/api/users.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register', ...payload })
+      });
+      const data = await res.json();
+      return data;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erreur réseau avec le serveur Hostinger.' };
+    }
+  },
+
+  /**
+   * Connexion d'un utilisateur (Client ou Administrateur)
+   */
+  async loginUser(
+    identifier: string,
+    password: string
+  ): Promise<{ success: boolean; message: string; user?: UserProfile }> {
+    try {
+      const res = await fetch('/api/users.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', identifier, password })
+      });
+      const data = await res.json();
+      return data;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erreur de connexion au serveur Hostinger.' };
+    }
+  },
+
+  /**
+   * Configuration personnalisée du compte Administrateur
+   */
+  async setupAdmin(payload: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }): Promise<{ success: boolean; message: string; user?: UserProfile }> {
+    try {
+      const res = await fetch('/api/users.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'setup_admin', ...payload })
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erreur lors de la configuration admin.' };
+    }
+  },
+
+  /**
+   * Mise à jour du profil utilisateur
+   */
+  async updateUserProfile(payload: {
+    id: string;
+    fullName: string;
+    phone: string;
+    city: string;
+    district: string;
+    address: string;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch('/api/users.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_profile', ...payload })
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Erreur de mise à jour.' };
     }
   }
 };

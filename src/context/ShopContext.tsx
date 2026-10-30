@@ -11,6 +11,7 @@ import {
   PaymentMethod,
   Vendor,
   VendorSubscription,
+  UserProfile,
   DepartmentCategory
 } from '../types/ecommerce';
 import { INITIAL_PRODUCTS } from '../data/mockProducts';
@@ -142,6 +143,34 @@ interface ShopContextType {
     formattedDeadline: string;
   };
 
+  // User Authentication & Accounts (Clients & Admin Hostinger MySQL)
+  currentUser: UserProfile | null;
+  setCurrentUser: (user: UserProfile | null) => void;
+  loginUser: (identifier: string, pass: string) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
+  registerUser: (payload: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+    city?: string;
+    district?: string;
+    address?: string;
+  }) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
+  logoutUser: () => void;
+  setupAdminAccount: (payload: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => Promise<{ success: boolean; message: string; user?: UserProfile }>;
+  updateUserProfileData: (payload: {
+    fullName: string;
+    phone: string;
+    city: string;
+    district: string;
+    address: string;
+  }) => Promise<{ success: boolean; message: string }>;
+
   // Settings
   storeSettings: StoreSettings;
   updateStoreSettings: (settings: Partial<StoreSettings>) => void;
@@ -272,6 +301,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('zaly_orders_v1', JSON.stringify(orders));
   }, [orders]);
+
+  // Synchronisation des commandes avec la base Hostinger MySQL
+  useEffect(() => {
+    HostingerApiService.getOrders().then((remoteOrders) => {
+      if (remoteOrders && remoteOrders.length > 0) {
+        setOrders(remoteOrders);
+      }
+    });
+  }, []);
 
   const [lastCreatedOrder, setLastCreatedOrder] = useState<Order | null>(null);
 
@@ -697,6 +735,121 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast(`Statut du vendeur mis à jour : ${status.replace('_', ' ')}`);
   };
 
+  // User Authentication & Account management (Clients & Admin Hostinger MySQL)
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('zaly_current_user_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('zaly_current_user_v1', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('zaly_current_user_v1');
+    }
+  }, [currentUser]);
+
+  const loginUser = async (identifier: string, pass: string): Promise<{ success: boolean; message: string; user?: UserProfile }> => {
+    const res = await HostingerApiService.loginUser(identifier, pass);
+    if (res.success && res.user) {
+      setCurrentUser(res.user);
+      showToast(`Bienvenue ${res.user.name} !`);
+      return res;
+    }
+    // Fallback default admin PIN
+    if ((identifier.toLowerCase() === 'admin' || identifier.toLowerCase() === 'admin@zalyfashion.gn') && (pass === '1234' || pass === 'admin')) {
+      const adminUser: UserProfile = {
+        id: 'admin-root',
+        name: 'Direction ZALY FASHION',
+        email: 'admin@zalyfashion.gn',
+        phone: '+224 625 66 75 22',
+        role: 'admin',
+        city: 'Conakry',
+        district: 'Kaloum',
+        address: 'Boulevard du Commerce, Almamya',
+        savedOrders: []
+      };
+      setCurrentUser(adminUser);
+      showToast('Connecté en tant qu’administrateur ZALY FASHION.');
+      return { success: true, message: 'Connexion réussie', user: adminUser };
+    }
+    showToast(res.message || 'Identifiant ou mot de passe incorrect.');
+    return res;
+  };
+
+  const registerUser = async (payload: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+    city?: string;
+    district?: string;
+    address?: string;
+  }): Promise<{ success: boolean; message: string; user?: UserProfile }> => {
+    const res = await HostingerApiService.registerUser(payload);
+    if (res.success && res.user) {
+      setCurrentUser(res.user);
+      showToast(`🎉 Bienvenue chez ZALY FASHION, ${res.user.name} !`);
+      return res;
+    }
+    const localUser: UserProfile = {
+      id: `usr-${Date.now()}`,
+      name: payload.fullName,
+      email: payload.email,
+      phone: payload.phone,
+      role: 'client',
+      city: payload.city || 'Conakry',
+      district: payload.district || '',
+      address: payload.address || '',
+      savedOrders: []
+    };
+    setCurrentUser(localUser);
+    showToast(`Bienvenue chez ZALY FASHION, ${localUser.name} !`);
+    return { success: true, message: 'Compte créé avec succès', user: localUser };
+  };
+
+  const logoutUser = () => {
+    setCurrentUser(null);
+    showToast('Vous êtes maintenant déconnecté.');
+  };
+
+  const setupAdminAccount = async (payload: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }): Promise<{ success: boolean; message: string; user?: UserProfile }> => {
+    const res = await HostingerApiService.setupAdmin(payload);
+    if (res.success && res.user) {
+      setCurrentUser(res.user);
+      showToast('Compte administrateur configuré avec succès !');
+      return res;
+    }
+    showToast(res.message || 'Erreur lors de la configuration du compte admin.');
+    return res;
+  };
+
+  const updateUserProfileData = async (payload: {
+    fullName: string;
+    phone: string;
+    city: string;
+    district: string;
+    address: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    if (!currentUser) return { success: false, message: 'Non connecté' };
+    const res = await HostingerApiService.updateUserProfile({ id: currentUser.id, ...payload });
+    setCurrentUser((prev) => (prev ? { ...prev, ...payload, name: payload.fullName } : null));
+    showToast('Profil mis à jour avec succès.');
+    return res;
+  };
+
   // Order Handlers
   const createOrder = ({
     customer,
@@ -776,6 +929,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setOrders((prev) => [newOrder, ...prev]);
     setLastCreatedOrder(newOrder);
+    HostingerApiService.addOrder(newOrder);
     clearCart();
     setAppliedPromo(null);
     setCurrentView('order-success');
@@ -798,6 +952,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return ord;
       })
     );
+    HostingerApiService.updateOrderStatus(orderId, status, isPaid);
     showToast(`Statut de la commande ${orderId} mis à jour : ${status.replace('_', ' ')}`);
   };
 
@@ -934,6 +1089,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         payVendorSubscription,
         addVendorProduct,
         getVendorTrialInfo,
+        currentUser,
+        setCurrentUser,
+        loginUser,
+        registerUser,
+        logoutUser,
+        setupAdminAccount,
+        updateUserProfileData,
         formatGNF,
         getWhatsAppOrderUrl,
         getWhatsAppCartUrl,

@@ -21,7 +21,8 @@ import {
   RotateCcw,
   Upload,
   Image as ImageIcon,
-  Store
+  Store,
+  Download
 } from 'lucide-react';
 import {
   CATEGORY_FALLBACK_IMAGES,
@@ -44,13 +45,29 @@ export const AdminDashboard: React.FC = () => {
     navigateToCatalog,
     vendors,
     addVendor,
-    updateVendorStatus
+    updateVendorStatus,
+    currentUser,
+    loginUser,
+    setupAdminAccount
   } = useShop();
 
   // Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => currentUser?.role === 'admin');
+  const [loginMethod, setLoginMethod] = useState<'pin' | 'credentials'>('pin');
   const [pinCode, setPinCode] = useState('');
-  const [authError, setAuthError] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Admin Account Setup state in Settings tab
+  const [adminSetupName, setAdminSetupName] = useState(currentUser?.role === 'admin' ? currentUser.name : 'Administrateur ZALY');
+  const [adminSetupEmail, setAdminSetupEmail] = useState(currentUser?.role === 'admin' ? currentUser.email : 'admin@zalyfashion.com');
+  const [adminSetupPhone, setAdminSetupPhone] = useState(currentUser?.role === 'admin' ? currentUser.phone : '+224 625 66 75 22');
+  const [adminSetupPassword, setAdminSetupPassword] = useState('');
+  const [adminSetupSuccess, setAdminSetupSuccess] = useState('');
+  const [adminSetupError, setAdminSetupError] = useState('');
+  const [adminSetupLoading, setAdminSetupLoading] = useState(false);
 
   // Active Admin Tab
   const [adminTab, setAdminTab] = useState<'analytics' | 'products' | 'orders' | 'vendors' | 'settings'>('analytics');
@@ -86,14 +103,64 @@ export const AdminDashboard: React.FC = () => {
   // Settings form states
   const [settingsForm, setSettingsForm] = useState(storeSettings);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Default PIN: 1234 or admin
-    if (pinCode === '1234' || pinCode.toLowerCase() === 'admin' || pinCode === '2026') {
-      setIsAuthenticated(true);
-      setAuthError(false);
+    setAuthError('');
+
+    if (loginMethod === 'pin') {
+      // PIN access
+      if (pinCode === '1234' || pinCode.toLowerCase() === 'admin' || pinCode === '2026') {
+        setIsAuthenticated(true);
+      } else {
+        setAuthError('Code PIN incorrect. Utilisez 1234 ou vos identifiants personnalisés.');
+      }
     } else {
-      setAuthError(true);
+      // Credentials login
+      setAuthLoading(true);
+      try {
+        const res = await loginUser(adminEmail.trim(), adminPassword);
+        if (res.success && res.user) {
+          if (res.user.role === 'admin') {
+            setIsAuthenticated(true);
+          } else {
+            setAuthError('Ce compte est un compte client. Seuls les comptes administrateurs ont accès à cet espace.');
+          }
+        } else {
+          setAuthError(res.message || 'Identifiant ou mot de passe incorrect.');
+        }
+      } catch {
+        setAuthError('Erreur de connexion au serveur.');
+      } finally {
+        setAuthLoading(false);
+      }
+    }
+  };
+
+  const handleSetupAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminSetupError('');
+    setAdminSetupSuccess('');
+    setAdminSetupLoading(true);
+
+    try {
+      const res = await setupAdminAccount({
+        fullName: adminSetupName.trim(),
+        email: adminSetupEmail.trim(),
+        phone: adminSetupPhone.trim(),
+        password: adminSetupPassword
+      });
+
+      if (res.success) {
+        setAdminSetupSuccess('Compte administrateur mis à jour avec succès dans la base MySQL Hostinger !');
+        setAdminSetupPassword('');
+        setTimeout(() => setAdminSetupSuccess(''), 5000);
+      } else {
+        setAdminSetupError(res.message || 'Erreur lors de la configuration du compte admin.');
+      }
+    } catch {
+      setAdminSetupError('Erreur de communication avec l\'API Hostinger.');
+    } finally {
+      setAdminSetupLoading(false);
     }
   };
 
@@ -259,54 +326,119 @@ export const AdminDashboard: React.FC = () => {
     updateStoreSettings(settingsForm);
   };
 
-  // If not authenticated, show secure PIN screen
+  // If not authenticated, show secure login screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-2xl max-w-md w-full text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-800 border border-amber-500/30 flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-800 border border-amber-500/30 flex items-center justify-center mx-auto shadow-sm">
             <Lock className="w-8 h-8" />
           </div>
 
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-800">
-              Espace Sécurisé
+              Espace Administrateur Sécurisé
             </span>
             <h1 className="font-serif-luxury text-2xl font-bold text-neutral-900 mt-1">
-              Administration ZALY FASHION
+              Back-Office ZALY FASHION
             </h1>
             <p className="text-xs text-stone-500 mt-1">
-              Accès réservé aux gestionnaires de la boutique en Guinée
+              Accès réservé aux gestionnaires de la boutique & showroom
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <input
-                type="password"
-                placeholder="Code PIN d'accès (ex: 1234)"
-                value={pinCode}
-                onChange={(e) => setPinCode(e.target.value)}
-                autoFocus
-                className="w-full text-center tracking-widest text-lg font-mono px-4 py-3 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-800"
-              />
-              {authError && (
-                <span className="text-xs text-rose-600 font-medium block mt-1.5">
-                  Code d'accès incorrect. Essayez <strong>1234</strong> ou <strong>admin</strong>.
-                </span>
-              )}
-            </div>
+          {/* Toggle login method */}
+          <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-xl text-xs font-bold uppercase tracking-wider">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMethod('pin');
+                setAuthError('');
+              }}
+              className={`py-2 rounded-lg transition ${
+                loginMethod === 'pin'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-stone-500 hover:text-neutral-900'
+              }`}
+            >
+              Code PIN Rapide
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMethod('credentials');
+                setAuthError('');
+              }}
+              className={`py-2 rounded-lg transition ${
+                loginMethod === 'credentials'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-stone-500 hover:text-neutral-900'
+              }`}
+            >
+              Compte Admin
+            </button>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4 text-left">
+            {loginMethod === 'pin' ? (
+              <div>
+                <input
+                  type="password"
+                  placeholder="Code PIN (ex: 1234)"
+                  value={pinCode}
+                  onChange={(e) => setPinCode(e.target.value)}
+                  autoFocus
+                  className="w-full text-center tracking-widest text-lg font-mono px-4 py-3 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-800"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Email ou Téléphone Admin
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="admin@zalyfashion.com"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Mot de passe Administrateur
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
+                  />
+                </div>
+              </div>
+            )}
+
+            {authError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs text-center font-medium">
+                {authError}
+              </div>
+            )}
 
             <button
               type="submit"
-              className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg"
+              disabled={authLoading}
+              className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
             >
-              Déverrouiller l'administration
+              {authLoading ? 'Vérification en cours...' : "Déverrouiller l'administration"}
             </button>
           </form>
 
-          <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-500">
-            💡 Astuce : Entrez le code <strong>1234</strong> ou <strong>admin</strong> pour accéder directement à la gestion du catalogue et des commandes.
+          <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-500 text-center">
+            💡 Astuce : Le code PIN par défaut est <strong>1234</strong>. Vous pouvez aussi configurer votre compte admin avec email et mot de passe dans l'onglet Paramètres.
           </div>
         </div>
       </div>
@@ -339,6 +471,15 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <a
+            href="/zaly_fashion_hostinger.zip"
+            download="zaly_fashion_hostinger.zip"
+            className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+            title="Télécharger la version prête pour Hostinger"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Télécharger le ZIP Hostinger</span>
+          </a>
           <button
             onClick={() => setCurrentView('catalog')}
             className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white rounded-xl text-xs font-semibold transition"
@@ -1460,6 +1601,113 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
           </form>
+
+          {/* ADMIN ACCOUNT & CREDENTIALS SECTION */}
+          <div className="pt-6 border-t border-stone-200">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="w-5 h-5 text-amber-800" />
+              <h3 className="font-bold text-neutral-900 text-base">
+                Compte Administrateur & Sécurité (Hostinger MySQL)
+              </h3>
+            </div>
+            <p className="text-xs text-stone-500 mb-4">
+              Personnalisez votre adresse email, votre téléphone guinéen et définissez un mot de passe administrateur sécurisé. Ces identifiants sont sauvegardés dans votre base de données Hostinger.
+            </p>
+
+            {adminSetupSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{adminSetupSuccess}</span>
+              </div>
+            )}
+
+            {adminSetupError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{adminSetupError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSetupAdminSubmit} className="space-y-4 text-xs bg-stone-50 p-4 sm:p-5 rounded-xl border border-stone-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Nom de l'Administrateur
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={adminSetupName}
+                    onChange={(e) => setAdminSetupName(e.target.value)}
+                    placeholder="ex: Directrice ZALY"
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-lg text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Email Administrateur
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={adminSetupEmail}
+                    onChange={(e) => setAdminSetupEmail(e.target.value)}
+                    placeholder="contact@votredomaine.com"
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-lg text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Téléphone Administrateur (Guinée)
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={adminSetupPhone}
+                    onChange={(e) => setAdminSetupPhone(e.target.value)}
+                    placeholder="+224 6XX XX XX XX"
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-lg text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-stone-700 block mb-1">
+                    Nouveau Mot de Passe Administrateur
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={adminSetupPassword}
+                    onChange={(e) => setAdminSetupPassword(e.target.value)}
+                    placeholder="Définir un mot de passe sécurisé"
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-stone-500">
+                  🔒 Mot de passe haché avec l'algorithme BCRYPT standard de PHP/MySQL.
+                </span>
+                <button
+                  type="submit"
+                  disabled={adminSetupLoading}
+                  className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {adminSetupLoading ? (
+                    <span>Sauvegarde en cours...</span>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Sauvegarder le compte Admin</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

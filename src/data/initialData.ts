@@ -30,7 +30,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   slogan: 'Votre style, votre élégance, votre identité.',
   whatsappNumber: '+224625667522',
   phoneContact: '+224 625 66 75 22',
-  email: 'contact@zalyfashion.gn',
+  email: 'contact@zalyfashion.com',
   address: 'Boulevard du Commerce, Almamya, Kaloum, Conakry, Guinée',
   announcementText: '✨ LIVRAISON EXPRESS DISPONIBLE À CONAKRY ET DANS TOUTE LA GUINÉE • PAIEMENT ORANGE MONEY & CASH',
   conakryShippingFee: 25000,

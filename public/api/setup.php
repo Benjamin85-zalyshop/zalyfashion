@@ -108,7 +108,7 @@ try {
         $defaultHash = password_hash('1234', PASSWORD_DEFAULT);
         $stmtAdmin = $pdo->prepare("INSERT INTO `users` (`id`, `fullName`, `email`, `phone`, `passwordHash`, `role`, `city`, `district`, `address`)
             VALUES (?, ?, ?, ?, ?, 'admin', 'Conakry', 'Kaloum', 'Siège ZALY FASHION')");
-        $stmtAdmin->execute(['admin-root', 'Direction ZALY FASHION', 'admin@zalyfashion.gn', '+224 625 66 75 22', $defaultHash]);
+        $stmtAdmin->execute(['admin-root', 'Direction ZALY FASHION', 'admin@zalyfashion.com', '+224 625 66 75 22', $defaultHash]);
     }
 
     // Vérifier si la boutique principale existe, sinon l'insérer
@@ -123,7 +123,7 @@ try {
             'vendor-zaly',
             'ZALY FASHION Officiel',
             'Maison ZALY Guinée',
-            'contact@zalyfashion.gn',
+            'contact@zalyfashion.com',
             '+224 625 66 75 22',
             '+224 625 66 75 22',
             'Conakry (Kaloum, Almamya)',

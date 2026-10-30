@@ -53,7 +53,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => currentUser?.role === 'admin');
-  const [loginMethod, setLoginMethod] = useState<'pin' | 'credentials'>('pin');
+  const [loginMethod, setLoginMethod] = useState<'pin' | 'credentials' | 'setup'>('pin');
   const [pinCode, setPinCode] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -151,8 +151,9 @@ export const AdminDashboard: React.FC = () => {
       });
 
       if (res.success) {
-        setAdminSetupSuccess('Compte administrateur mis à jour avec succès dans la base MySQL Hostinger !');
+        setAdminSetupSuccess('Compte administrateur créé et enregistré avec succès dans la base MySQL Hostinger !');
         setAdminSetupPassword('');
+        setIsAuthenticated(true);
         setTimeout(() => setAdminSetupSuccess(''), 5000);
       } else {
         setAdminSetupError(res.message || 'Erreur lors de la configuration du compte admin.');
@@ -330,7 +331,7 @@ export const AdminDashboard: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-3xl border border-stone-200 shadow-2xl max-w-md w-full text-center space-y-6">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-2xl max-w-lg w-full text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-800 border border-amber-500/30 flex items-center justify-center mx-auto shadow-sm">
             <Lock className="w-8 h-8" />
           </div>
@@ -347,21 +348,21 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Toggle login method */}
-          <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-xl text-xs font-bold uppercase tracking-wider">
+          {/* Toggle login method : 3 tabs */}
+          <div className="grid grid-cols-3 p-1 bg-stone-100 rounded-xl text-[11px] font-bold uppercase tracking-wider gap-1">
             <button
               type="button"
               onClick={() => {
                 setLoginMethod('pin');
                 setAuthError('');
               }}
-              className={`py-2 rounded-lg transition ${
+              className={`py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
                 loginMethod === 'pin'
                   ? 'bg-white text-neutral-900 shadow-sm'
                   : 'text-stone-500 hover:text-neutral-900'
               }`}
             >
-              Code PIN Rapide
+              PIN Rapide
             </button>
             <button
               type="button"
@@ -369,19 +370,37 @@ export const AdminDashboard: React.FC = () => {
                 setLoginMethod('credentials');
                 setAuthError('');
               }}
-              className={`py-2 rounded-lg transition ${
+              className={`py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
                 loginMethod === 'credentials'
                   ? 'bg-white text-neutral-900 shadow-sm'
                   : 'text-stone-500 hover:text-neutral-900'
               }`}
             >
-              Compte Admin
+              Se Connecter
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginMethod('setup');
+                setAuthError('');
+              }}
+              className={`py-2 px-1 rounded-lg transition text-center whitespace-nowrap ${
+                loginMethod === 'setup'
+                  ? 'bg-amber-800 text-white shadow-sm'
+                  : 'text-amber-800 hover:text-amber-900 font-extrabold'
+              }`}
+            >
+              Créer Compte
             </button>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4 text-left">
-            {loginMethod === 'pin' ? (
+          {/* 1. CODE PIN RAPIDE */}
+          {loginMethod === 'pin' && (
+            <form onSubmit={handleLogin} className="space-y-4 text-left">
               <div>
+                <label className="text-xs font-bold text-stone-700 block mb-1">
+                  Code PIN d'accès immédiat :
+                </label>
                 <input
                   type="password"
                   placeholder="Code PIN (ex: 1234)"
@@ -391,7 +410,42 @@ export const AdminDashboard: React.FC = () => {
                   className="w-full text-center tracking-widest text-lg font-mono px-4 py-3 bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:border-amber-800"
                 />
               </div>
-            ) : (
+
+              {authError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs text-center font-medium">
+                  {authError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
+              >
+                {authLoading ? 'Vérification...' : "Déverrouiller avec le Code PIN"}
+              </button>
+
+              <div className="pt-2 text-center space-y-2">
+                <p className="text-[11px] text-stone-500">
+                  💡 Le code d'usine est <strong>1234</strong>.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMethod('setup');
+                    setAuthError('');
+                  }}
+                  className="w-full py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-xl border border-amber-300 transition"
+                >
+                  👉 Vous voulez créer votre propre compte Admin ? Cliquez ici
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* 2. CONNEXION PAR EMAIL & MOT DE PASSE */}
+          {loginMethod === 'credentials' && (
+            <form onSubmit={handleLogin} className="space-y-4 text-left">
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
@@ -400,7 +454,7 @@ export const AdminDashboard: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="admin@zalyfashion.com"
+                    placeholder="ex: admin@zalyfashion.com"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
@@ -420,26 +474,122 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
               </div>
-            )}
 
-            {authError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs text-center font-medium">
-                {authError}
+              {authError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs text-center font-medium">
+                  {authError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
+              >
+                {authLoading ? 'Connexion en cours...' : "Se Connecter à l'Administration"}
+              </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMethod('setup');
+                    setAuthError('');
+                  }}
+                  className="text-xs text-amber-800 font-bold hover:underline"
+                >
+                  Pas encore de compte configuré ? Créez-le ici
+                </button>
               </div>
-            )}
+            </form>
+          )}
 
-            <button
-              type="submit"
-              disabled={authLoading}
-              className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
-            >
-              {authLoading ? 'Vérification en cours...' : "Déverrouiller l'administration"}
-            </button>
-          </form>
+          {/* 3. CRÉATION / CONFIGURATION DU COMPTE ADMIN */}
+          {loginMethod === 'setup' && (
+            <form onSubmit={handleSetupAdminSubmit} className="space-y-3.5 text-left">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 font-medium">
+                ✨ Définissez vos identifiants administrateur personnels. Ils seront enregistrés directement dans votre base Hostinger MySQL.
+              </div>
 
-          <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-500 text-center">
-            💡 Astuce : Le code PIN par défaut est <strong>1234</strong>. Vous pouvez aussi configurer votre compte admin avec email et mot de passe dans l'onglet Paramètres.
-          </div>
+              <div>
+                <label className="text-xs font-bold text-stone-700 block mb-1">
+                  Nom de l'Administrateur
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="ex: Benjamin Tolno"
+                  value={adminSetupName}
+                  onChange={(e) => setAdminSetupName(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Email Admin
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@zalyfashion.com"
+                    value={adminSetupEmail}
+                    onChange={(e) => setAdminSetupEmail(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Téléphone (Guinée)
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+224 6XX XX XX XX"
+                    value={adminSetupPhone}
+                    onChange={(e) => setAdminSetupPhone(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs font-mono focus:outline-none focus:border-amber-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-700 block mb-1">
+                  Choisissez votre Mot de Passe Administrateur
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Définissez un mot de passe sécurisé"
+                  value={adminSetupPassword}
+                  onChange={(e) => setAdminSetupPassword(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs focus:outline-none focus:border-amber-800"
+                />
+              </div>
+
+              {adminSetupError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs text-center font-medium">
+                  {adminSetupError}
+                </div>
+              )}
+
+              {adminSetupSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs text-center font-medium">
+                  {adminSetupSuccess}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={adminSetupLoading}
+                className="w-full py-3 bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg disabled:opacity-50"
+              >
+                {adminSetupLoading ? 'Enregistrement dans MySQL...' : "Créer mon Compte & Ouvrir l'Admin"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     );
